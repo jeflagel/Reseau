@@ -1,12 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <strings.h>
+#include <string.h>
 #include <netinet/in.h>
 #include <netdb.h>
 #include <sys/socket.h>
 
 
-
+void nettoyer(){   // on vide le buffer pour la prochaine saisie
+	char c;
+	while((c=getchar()) != '\n'){
+	}
+}
 
 
 void main(int argc, char *argv[])
@@ -27,13 +31,13 @@ void main(int argc, char *argv[])
   entree=(struct hostent *)gethostbyname(argv[1]);
   bcopy((char *)entree->h_addr,(char *)&addr.sin_addr,entree->h_length);
 
-  sock= socket(AF_INET,SOCK_STREAM,0);
+ 
 
-  if (connect(sock, (struct sockaddr *)&addr,sizeof(struct sockaddr_in)) < 0) {
+  /*if (connect(sock, (struct sockaddr *)&addr,sizeof(struct sockaddr_in)) < 0) {
     printf("probleme connexion\n");
     exit(1); }
 
-  printf("connexion passe\n");
+  printf("connexion passe\n");*/
 
   while (1) {
       bzero(Operation,sizeof(Operation));
@@ -46,7 +50,8 @@ void main(int argc, char *argv[])
         printf("Tapez 2 pour MUL : \n");
         printf("Tapez 3 pour QUIT : \n");
         choix=getchar();//on recupere le choix de l'utilisateur (1 caractere)
-        SaisieVal = 1 ;
+        nettoyer();
+        SaisieVal = 1 ; // on considere que la saisie est bonne si pas le cas le default remet a O
         switch (choix) {
           case '1':
             strcpy(Operation,"ADD ");
@@ -61,8 +66,16 @@ void main(int argc, char *argv[])
             SaisieVal = 0 ;
         }
       }
+      sock= socket(AF_INET,SOCK_STREAM,0);
+      if (connect(sock, (struct sockaddr *)&addr,sizeof(struct sockaddr_in)) < 0) {
+		printf("probleme connexion\n");
+		exit(1); 
+	  }
+	  printf("connexion passe\n");
       if (strcmp("QUI",Operation) == 0){ // si QUI alors on envoi fin au serveur et on arrete tout
         send(sock,Operation,strlen(Operation)+1,0);
+        recv(sock,buffer,sizeof(buffer),0);
+        printf("serveur dit : %s \n",buffer);
         break;
       }
       i = 4;
@@ -72,7 +85,7 @@ void main(int argc, char *argv[])
       }
       send(sock,Operation,strlen(Operation)+1,0);
       recv(sock,buffer,sizeof(buffer),0);
-      printf("recu %s\n",buffer);
+      printf("serveur dit :%s\n",buffer);
       if (strcmp(buffer,"OK")==0){  // si le serveur est ok on saisit les opérandes
         strtok(Operation," ");
         nbOperande=atoi(strtok(NULL,";"));  // on récupére le nb d'opérandes saisi précedemment
@@ -92,6 +105,6 @@ void main(int argc, char *argv[])
         recv(sock,buffer,sizeof(buffer),0);
         printf("resultat de l'opération %s\n",buffer); // on affiche le résultat de l'opération
       }
+      close(sock);
     }
-
-  close(sock); }
+ }
